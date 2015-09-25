@@ -12,6 +12,7 @@ import (
 	"encoding/asn1"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"net"
 	"sync/atomic"
 	"syscall"
@@ -1131,13 +1132,35 @@ func (x *GoSNMP) unmarshal(packet []byte, response *SnmpPacket) error {
 		if err != nil {
 			return fmt.Errorf("Error in unmarshalResponse: %s", err.Error())
 		}
+	// Traps: https://www.rfc-editor.org/rfc/rfc1592.txt p3.2.12
+	case Trap:
+	//	response, err = unmarshalTrapPDU(packet[cursor:], response, length, requestType)
+	//	if err != nil {
+	//return fmt.Errorf("Error in unmarshalTrap: %s", err.Error())
+	//}
 	default:
 		return fmt.Errorf("Unknown PDUType %#x", requestType)
 	}
 	return nil
 }
 
+func (x *GoSNMP) unmarshalTrapPDU(packet []byte, request *SnmpPacket) (*SnmpPacket, error) {
+	x.dumpBytes1(packet, "SNMP Trap Packet", 16)
+	// First bytes should be 0x30
+	if PDUType(packet[0]) != Sequence {
+		return nil, fmt.Errorf("Invalid packet header\n")
+	}
+
+	length, cursor := parseLength(packet)
+	log.Println("Packet Size: ", length)
+
+	log.Println("Cursor: ", cursor)
+
+	return nil, fmt.Errorf("not implemented yet.")
+}
+
 func (x *GoSNMP) unmarshalResponse(packet []byte, response *SnmpPacket, length int, requestType PDUType) (*SnmpPacket, error) {
+
 	cursor := 0
 	x.dumpBytes1(packet, "SNMP Packet is GET RESPONSE", 16)
 	response.PDUType = requestType
